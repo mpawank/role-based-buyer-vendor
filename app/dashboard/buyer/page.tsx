@@ -3,14 +3,15 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import jwt from 'jsonwebtoken';
+import Link from 'next/link';
+import { LogOut, Home, ShoppingCart, Settings, User } from 'lucide-react';
 
-export default function VendorDashboard() {
+export default function BuyerDashboard() {
   const router = useRouter();
   const [user, setUser] = useState<{ email: string; role: string } | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
-
     if (!token) {
       router.push('/login');
       return;
@@ -33,23 +34,56 @@ export default function VendorDashboard() {
     router.push('/login');
   };
 
+  if (!user) return null;
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-purple-100 p-4">
-      <div className="bg-white p-6 rounded-xl shadow-md w-full max-w-md text-center">
-        <h1 className="text-2xl font-bold text-purple-700 mb-4">Vendor Dashboard</h1>
-        {user && (
-          <>
-            <p className="text-gray-700 mb-2">Welcome, {user.email}</p>
-            <p className="text-sm text-gray-500">Role: {user.role}</p>
-            <button
-              onClick={logout}
-              className="mt-6 px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg"
-            >
-              Logout
-            </button>
-          </>
-        )}
-      </div>
+    <div className="min-h-screen flex bg-gray-100">
+      {/* Sidebar */}
+      <aside className="w-64 bg-white shadow-md flex flex-col">
+        <div className="p-4 text-xl font-bold text-purple-700 border-b">Buyer Panel</div>
+        <nav className="p-4 space-y-2 flex-1">
+          <SidebarLink icon={<Home size={18} />} href="/dashboard/buyer" label="Dashboard" />
+          <SidebarLink icon={<User size={18} />} href="/profile" label='profile'/>
+          <SidebarLink icon={<ShoppingCart size={18} />} href="/orders" label="Orders" />
+          <SidebarLink icon={<Settings size={18} />} href="/settings" label="Settings" />
+        </nav>
+        <div className="p-4 border-t">
+          <button
+            onClick={logout}
+            className="flex items-center gap-2 text-red-600 hover:bg-red-50 p-2 rounded-md w-full"
+          >
+            <LogOut size={18} />
+            Logout
+          </button>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 p-8">
+        <h1 className="text-2xl font-semibold mb-2 text-purple-700">Welcome, {user.email}</h1>
+        <p className="text-gray-600 text-sm">Role: {user.role}</p>
+        {/* You can add dashboard cards, tables, etc. here */}
+      </main>
     </div>
+  );
+}
+
+function SidebarLink({
+  icon,
+  href,
+  label,
+}: {
+  icon: React.ReactNode;
+  href: string;
+  label: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="flex items-center gap-2 text-gray-700 hover:bg-gray-100 p-2 rounded-md"
+    >
+      {icon}
+      <span>{label}</span>
+    </Link>
   );
 }
