@@ -9,7 +9,10 @@ export default function RegisterPage() {
     email: '',
     password: '',
     role: 'buyer',
+    name: '',
+    image: '',
   });
+
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
@@ -57,6 +60,20 @@ export default function RegisterPage() {
         {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
         {success && <p className="text-green-600 text-sm mb-4">{success}</p>}
 
+        {/* Name Field */}
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-1">Full Name</label>
+          <input
+            type="text"
+            name="name"
+            value={form.name}
+            onChange={handleChange}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2"
+            required
+          />
+        </div>
+
+        {/* Email Field */}
         <div className="mb-4">
           <label className="block text-gray-700 mb-1">Email</label>
           <input
@@ -69,6 +86,7 @@ export default function RegisterPage() {
           />
         </div>
 
+        {/* Password Field */}
         <div className="mb-4">
           <label className="block text-gray-700 mb-1">Password</label>
           <input
@@ -81,7 +99,8 @@ export default function RegisterPage() {
           />
         </div>
 
-        <div className="mb-6">
+        {/* Role Select */}
+        <div className="mb-4">
           <label className="block text-gray-700 mb-1">Role</label>
           <select
             name="role"
@@ -92,6 +111,18 @@ export default function RegisterPage() {
             <option value="buyer">Buyer</option>
             <option value="vendor">Vendor</option>
           </select>
+        </div>
+
+        {/* Image URL (optional) */}
+        <div className="mb-6">
+          <label className="block text-gray-700 mb-1">Profile Image URL (optional)</label>
+          <input
+            type="url"
+            name="image"
+            value={form.image}
+            onChange={handleChange}
+            className="w-full border border-gray-300 rounded-lg px-3 py-2"
+          />
         </div>
 
         <button
