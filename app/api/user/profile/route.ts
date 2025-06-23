@@ -3,6 +3,7 @@ import cloudinary from '@/lib/cloudinary';
 import User from '@/models/User';
 import { connectDB } from '@/lib/db';
 import jwt from 'jsonwebtoken';
+import { UploadApiResponse } from 'cloudinary'; // ✅ Fix: typed import
 
 export async function PUT(req: NextRequest) {
   await connectDB();
@@ -26,11 +27,11 @@ export async function PUT(req: NextRequest) {
     if (file && file.size > 0) {
       const buffer = Buffer.from(await file.arrayBuffer());
 
-      const result = await new Promise<any>((resolve, reject) => {
+      const result: UploadApiResponse = await new Promise((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
           { folder: 'profile_pics', resource_type: 'image' },
           (err, result) => {
-            if (err) reject(err);
+            if (err || !result) return reject(err);
             resolve(result);
           }
         );
