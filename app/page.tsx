@@ -53,7 +53,7 @@ export default function Home() {
 
       localStorage.setItem('token', data.token);
       router.push(`/dashboard/${data.role}`);
-    } catch (err: any) {
+    } catch (err: React.FormEvent<HTMLFormElement>) {
       setError(err.message);
     } finally {
       setLoading(false);

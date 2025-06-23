@@ -42,7 +42,7 @@ export default function RegisterPage() {
 
       setSuccess('Registration successful! Redirecting...');
       setTimeout(() => router.push('/login'), 1500);
-    } catch (err: any) {
+    } catch (err: React.FormEvent<HTMLFormElement>) {
       setError(err.message);
     } finally {
       setLoading(false);

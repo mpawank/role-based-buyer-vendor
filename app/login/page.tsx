@@ -38,7 +38,7 @@ export default function LoginPage() {
       // optionally store token in localStorage
       localStorage.setItem('token', data.token);
       router.push(`/dashboard/${data.role}`);
-    } catch (err: any) {
+    } catch (err: React.FormEvent<HTMLFormElement>) {
       setError(err.message);
     } finally {
       setLoading(false);
