@@ -35,11 +35,14 @@ export default function LoginPage() {
         throw new Error(data.error || 'Login failed');
       }
 
-      // optionally store token in localStorage
       localStorage.setItem('token', data.token);
       router.push(`/dashboard/${data.role}`);
-    } catch (err: React.FormEvent<HTMLFormElement>) {
-      setError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Something went wrong');
+      }
     } finally {
       setLoading(false);
     }
