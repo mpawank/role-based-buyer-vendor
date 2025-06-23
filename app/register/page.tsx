@@ -42,8 +42,12 @@ export default function RegisterPage() {
 
       setSuccess('Registration successful! Redirecting...');
       setTimeout(() => router.push('/login'), 1500);
-    } catch (err: React.FormEvent<HTMLFormElement>) {
-      setError(err.message);
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Something went wrong');
+      }
     } finally {
       setLoading(false);
     }
@@ -60,7 +64,6 @@ export default function RegisterPage() {
         {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
         {success && <p className="text-green-600 text-sm mb-4">{success}</p>}
 
-        {/* Name Field */}
         <div className="mb-4">
           <label className="block text-gray-700 mb-1">Full Name</label>
           <input
@@ -73,7 +76,6 @@ export default function RegisterPage() {
           />
         </div>
 
-        {/* Email Field */}
         <div className="mb-4">
           <label className="block text-gray-700 mb-1">Email</label>
           <input
@@ -86,7 +88,6 @@ export default function RegisterPage() {
           />
         </div>
 
-        {/* Password Field */}
         <div className="mb-4">
           <label className="block text-gray-700 mb-1">Password</label>
           <input
@@ -99,7 +100,6 @@ export default function RegisterPage() {
           />
         </div>
 
-        {/* Role Select */}
         <div className="mb-4">
           <label className="block text-gray-700 mb-1">Role</label>
           <select
@@ -113,7 +113,6 @@ export default function RegisterPage() {
           </select>
         </div>
 
-        {/* Image URL (optional) */}
         <div className="mb-6">
           <label className="block text-gray-700 mb-1">Profile Image URL (optional)</label>
           <input
