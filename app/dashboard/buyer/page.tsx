@@ -76,8 +76,8 @@ export default function BuyerDashboard() {
         </div>
         <nav className="p-4 space-y-2 flex-1">
           <SidebarLink icon={<Home size={18} />} href="/dashboard/buyer" label="Dashboard" />
-          <SidebarLink icon={<User size={18} />} href="/profile" label="Profile" />
-          <SidebarLink icon={<ShoppingCart size={18} />} href="/orders" label="My Orders" />
+          <SidebarLink icon={<User size={18} />} href="/dashboard/buyer/profile" label="Profile" />
+          <SidebarLink icon={<ShoppingCart size={18} />} href="/dashboard/buyer/products" label="My Products" />
           <SidebarLink icon={<Settings size={18} />} href="/buyer-settings" label="Settings" />
         </nav>
         <div className="p-4 border-t">

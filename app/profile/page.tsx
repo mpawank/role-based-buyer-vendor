@@ -1,81 +1,137 @@
-// app/dashboard/buyer/profile/page.tsx OR vendor/profile/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import jwt from 'jsonwebtoken';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
 
-export default function ProfilePage() {
-  const [name, setName] = useState('');
-  const [image, setImage] = useState('');
-  const [preview, setPreview] = useState('');
-  const [message, setMessage] = useState('');
+type UserType = {
+  email: string;
+  role: string;
+  name?: string;
+  image?: string;
+};
+
+export default function BuyerProfilePage() {
+  const router = useRouter();
+  const [user, setUser] = useState<UserType | null>(null);
+  const [formData, setFormData] = useState({ name: '', image: '' });
+  const [editMode, setEditMode] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    const decoded = jwt.decode(token) as UserType;
+    if (decoded?.role !== 'buyer') {
+      router.push('/login');
+      return;
+    }
+
     fetch('/api/me', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => res.json())
-      .then(data => {
-        setName(data.name || '');
-        setImage(data.image || '');
-      });
-  }, []);
-
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setPreview(URL.createObjectURL(file));
-    }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setMessage('');
-    const token = localStorage.getItem('token');
-    const formData = new FormData();
-    formData.append('name', name);
-    if ((document.getElementById('file') as HTMLInputElement)?.files?.[0]) {
-      formData.append('file', (document.getElementById('file') as HTMLInputElement).files![0]);
-    }
-
-    const res = await fetch('/api/user/profile', {
-      method: 'PUT',
       headers: { Authorization: `Bearer ${token}` },
-      body: formData,
-    });
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        setUser(data);
+        setFormData({ name: data.name || '', image: data.image || '' });
+        setLoading(false);
+      });
+  }, [router]);
 
-    const data = await res.json();
-    if (data.success) {
-      setImage(data.user.image);
-      setMessage('Profile updated successfully');
-    } else {
-      setMessage('Failed to update');
+  const handleUpdate = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/me', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!res.ok) throw new Error('Update failed');
+      const updated = await res.json();
+      setUser(updated);
+      setEditMode(false);
+      alert('Profile updated!');
+    } catch (err) {
+      console.error(err);
+      alert('Failed to update profile.');
     }
   };
+
+  const handleChange = (key: string, value: string) => {
+    setFormData((prev) => ({ ...prev, [key]: value }));
+  };
+
+  if (loading) return <div className="p-6">Loading profile...</div>;
 
   return (
-    <div className="max-w-xl mx-auto mt-10 p-6 bg-white shadow rounded-xl">
-      <h2 className="text-2xl font-bold mb-4">Edit Profile</h2>
-      <form onSubmit={handleSubmit}>
-        <div className="mb-4">
-          <label className="block mb-1 font-medium">Name</label>
-          <input
-            value={name}
-            onChange={e => setName(e.target.value)}
-            className="w-full px-3 py-2 border rounded-lg"
-          />
-        </div>
-        <div className="mb-4">
-          <label className="block mb-1 font-medium">Profile Picture</label>
-          <input type="file" id="file" accept="image/*" onChange={handleImageChange} />
-          {preview && <img src={preview} className="w-20 h-20 mt-2 rounded-full" />}
-          {!preview && image && <img src={image} className="w-20 h-20 mt-2 rounded-full" />}
-        </div>
-        <button type="submit" className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700">
-          Save Changes
-        </button>
-      </form>
-      {message && <p className="mt-4 text-green-600">{message}</p>}
+    <div className="max-w-2xl mx-auto p-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Your Profile</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {user?.image && (
+            <img
+              src={user.image}
+              alt="Profile"
+              className="w-24 h-24 rounded-full object-cover border"
+            />
+          )}
+
+          <div>
+            <Label>Email</Label>
+            <Input value={user?.email} disabled />
+          </div>
+
+          <div>
+            <Label>Role</Label>
+            <Input value={user?.role} disabled />
+          </div>
+
+          <div>
+            <Label>Name</Label>
+            <Input
+              value={formData.name}
+              onChange={(e) => handleChange('name', e.target.value)}
+              disabled={!editMode}
+            />
+          </div>
+
+          <div>
+            <Label>Image URL</Label>
+            <Input
+              value={formData.image}
+              onChange={(e) => handleChange('image', e.target.value)}
+              disabled={!editMode}
+            />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-4">
+            {editMode ? (
+              <>
+                <Button variant="outline" onClick={() => setEditMode(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleUpdate}>Save</Button>
+              </>
+            ) : (
+              <Button onClick={() => setEditMode(true)}>Edit Profile</Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
