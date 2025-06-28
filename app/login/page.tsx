@@ -8,7 +8,7 @@ export default function LoginPage() {
   const [form, setForm] = useState({
     email: '',
     password: '',
-    role: 'buyer',
+    role: 'buyer', // Optional: may remove if backend auto-detects
   });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -35,8 +35,19 @@ export default function LoginPage() {
         throw new Error(data.error || 'Login failed');
       }
 
+      // Save JWT
       localStorage.setItem('token', data.token);
-      router.push(`/dashboard/${data.role}`);
+
+      // Redirect based on role
+      if (data.role === 'buyer') {
+        router.push(`/dashboard/buyer/${data._id}`);
+      } else if (data.role === 'vendor') {
+        router.push(`/dashboard/vendor/${data._id}`);
+      } else if (data.role === 'admin') {
+        router.push(`/dashboard/admin`);
+      } else {
+        throw new Error('Unknown role');
+      }
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -82,7 +93,8 @@ export default function LoginPage() {
           />
         </div>
 
-        <div className="mb-6">
+        {/* Optional: Only show if your backend uses it */}
+        {/* <div className="mb-6">
           <label className="block text-gray-700 mb-1">Role</label>
           <select
             name="role"
@@ -93,7 +105,7 @@ export default function LoginPage() {
             <option value="buyer">Buyer</option>
             <option value="vendor">Vendor</option>
           </select>
-        </div>
+        </div> */}
 
         <button
           type="submit"

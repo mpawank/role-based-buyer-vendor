@@ -19,25 +19,34 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
     }
 
-    const token = jwt.sign(
-      {
-        userId: user._id,
-        email: user.email,
-        role: user.role,
-      },
-      process.env.JWT_SECRET as string,
-      { expiresIn: '2h' }
-    );
+    // Payload for JWT
+    const payload: Record<string, any> = {
+      email: user.email,
+      role: user.role,
+      _id: user._id, // Always include _id
+    };
+
+    if (user.role === 'buyer') {
+      payload.buyerId = user._id;
+    } else {
+      payload.userId = user._id;
+    }
+
+    const token = jwt.sign(payload, process.env.JWT_SECRET as string, {
+      expiresIn: '2h',
+    });
 
     return NextResponse.json(
       {
         message: 'Login successful',
         token,
         role: user.role,
+        _id: user._id,
+        name: user.name,
+        image: user.image,
       },
       { status: 200 }
     );
-    
   } catch (error) {
     console.error('Login Error:', error);
     return NextResponse.json({ error: 'Server error' }, { status: 500 });

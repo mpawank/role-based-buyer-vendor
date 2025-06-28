@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useEffect, useState } from 'react';
@@ -8,8 +7,15 @@ import { Label } from '@/components/ui/label';
 import { Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
+type UserType = {
+  _id: string;
+  name: string;
+  email: string;
+  image?: string;
+};
+
 export default function BuyerProfilePage() {
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<UserType | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string>('');
   const [saving, setSaving] = useState(false);
@@ -18,17 +24,23 @@ export default function BuyerProfilePage() {
   useEffect(() => {
     const fetchProfile = async () => {
       const token = localStorage.getItem('token');
+      if (!token) return router.push('/login');
+
       const res = await fetch('/api/me', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
+
       const data = await res.json();
+      if (data?.error) return router.push('/login');
+
       setUser(data);
       setPreview(data.image);
     };
+
     fetchProfile();
-  }, []);
+  }, [router]);
 
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -41,11 +53,13 @@ export default function BuyerProfilePage() {
   const handleUpdate = async () => {
     setSaving(true);
     try {
-      let uploadedImageUrl = user.image;
+      let uploadedImageUrl = user?.image || '';
+
+      // Upload to Cloudinary if file selected
       if (selectedFile) {
         const formData = new FormData();
         formData.append('file', selectedFile);
-        formData.append('upload_preset', 'unsigned_upload'); // Replace
+        formData.append('upload_preset', 'unsigned_upload'); // ✅ Replace with your Cloudinary preset
 
         const uploadRes = await fetch('https://api.cloudinary.com/v1_1/deurwjvo4/image/upload', {
           method: 'POST',
@@ -53,6 +67,10 @@ export default function BuyerProfilePage() {
         });
 
         const uploadData = await uploadRes.json();
+        if (!uploadRes.ok || !uploadData.secure_url) {
+          throw new Error('Image upload failed');
+        }
+
         uploadedImageUrl = uploadData.secure_url;
       }
 
@@ -64,14 +82,15 @@ export default function BuyerProfilePage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          name: user.name,
+          name: user?.name,
           image: uploadedImageUrl,
         }),
       });
 
       const updated = await res.json();
       if (!res.ok) throw new Error(updated.error || 'Update failed');
-      alert('Profile updated');
+
+      alert('Profile updated successfully');
       setUser(updated);
     } catch (err) {
       console.error(err);
@@ -86,17 +105,24 @@ export default function BuyerProfilePage() {
   return (
     <div className="max-w-xl mx-auto p-6 space-y-4">
       <h1 className="text-xl font-semibold">Edit Profile</h1>
+
       <div>
         <Label>Name</Label>
         <Input
-          value={user.name || ''}
+          value={user.name}
           onChange={(e) => setUser({ ...user, name: e.target.value })}
         />
       </div>
 
       <div>
         <Label>Profile Picture</Label>
-        {preview && <img src={preview} alt="Preview" className="h-24 w-24 rounded-full object-cover mt-2" />}
+        {preview && (
+          <img
+            src={preview}
+            alt="Preview"
+            className="h-24 w-24 rounded-full object-cover mt-2"
+          />
+        )}
         <Input type="file" accept="image/*" onChange={handleImageSelect} className="mt-2" />
       </div>
 

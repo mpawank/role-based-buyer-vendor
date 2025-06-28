@@ -1,6 +1,7 @@
+// app/dashboard/buyer/[buyerId]/products/add/page.tsx
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   ArrowLeft,
   Upload,
@@ -11,28 +12,29 @@ import {
   Image as ImageIcon,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import jwt from 'jsonwebtoken';
 
 const ProductForm = () => {
   const router = useRouter();
-
+  const [buyerId, setBuyerId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('general');
   const [formData, setFormData] = useState({
-    name: '',
-    sku: '',
-    slug: '',
-    price: '',
-    stock: '',
-    discount: '',
-    comparePrice: '',
-    costPrice: '',
-    weight: '',
-    brand: '',
-    categories: [],
+    name: '', sku: '', slug: '', price: '', stock: '',
+    discount: '', comparePrice: '', costPrice: '', weight: '',
+    brand: '', categories: [],
   });
 
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      const decoded = jwt.decode(token) as { buyerId?: string };
+      setBuyerId(decoded?.buyerId ?? null);
+    }
+  }, []);
 
   const generateSlug = (name: string) =>
     name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -68,8 +70,8 @@ const ProductForm = () => {
   const uploadToCloudinary = async (file: File) => {
     const data = new FormData();
     data.append('file', file);
-    data.append('upload_preset', 'unsigned_upload'); // 🔁 Replace with real preset
-    const res = await fetch('https://api.cloudinary.com/v1_1/deurwjvo4/image/upload', { // 🔁 Replace
+    data.append('upload_preset', 'unsigned_upload');
+    const res = await fetch('https://api.cloudinary.com/v1_1/deurwjvo4/image/upload', {
       method: 'POST',
       body: data,
     });
@@ -78,8 +80,16 @@ const ProductForm = () => {
   };
 
   const handleSubmit = async () => {
+    if (!buyerId) {
+      alert('Buyer ID is missing. Please log in again.');
+      return;
+    }
+
     setIsLoading(true);
     try {
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('Unauthorized: Token missing');
+
       const imageUrls = await Promise.all(selectedFiles.map(uploadToCloudinary));
 
       const payload = {
@@ -90,12 +100,16 @@ const ProductForm = () => {
         comparePrice: parseFloat(formData.comparePrice),
         costPrice: parseFloat(formData.costPrice),
         weight: parseFloat(formData.weight),
+        buyerId,
         images: imageUrls,
       };
 
       const res = await fetch('/api/buyer/products', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
         body: JSON.stringify(payload),
       });
 
@@ -105,7 +119,7 @@ const ProductForm = () => {
       }
 
       alert('Product created successfully!');
-      router.push('/dashboard/buyer/products');
+      router.push(`/dashboard/buyer/${buyerId}/products`);
     } catch (err: any) {
       console.error(err);
       alert(err.message || 'Failed to create product.');
@@ -117,36 +131,26 @@ const ProductForm = () => {
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-6xl mx-auto">
-        {/* Header */}
         <div className="bg-white rounded-lg shadow-sm border p-6 mb-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button className="p-2 hover:bg-gray-100 rounded-lg" onClick={() => router.back()}>
                 <ArrowLeft className="w-5 h-5" />
               </button>
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">Add New Product</h1>
-              </div>
+              <h1 className="text-2xl font-bold text-gray-900">Add New Product</h1>
             </div>
           </div>
         </div>
 
-        {/* Tabs */}
         <div className="bg-white rounded-lg shadow-sm border mb-6">
           <div className="border-b">
             <nav className="flex space-x-8 px-6">
-              {[
-                { id: 'general', label: 'General', icon: Package },
-                { id: 'inventory', label: 'Inventory', icon: Eye },
-                { id: 'images', label: 'Images', icon: ImageIcon },
-              ].map((tab) => (
+              {[{ id: 'general', label: 'General', icon: Package }, { id: 'inventory', label: 'Inventory', icon: Eye }, { id: 'images', label: 'Images', icon: ImageIcon }].map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
                   className={`flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm ${
-                    activeTab === tab.id
-                      ? 'border-blue-500 text-blue-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                    activeTab === tab.id ? 'border-blue-500 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'
                   }`}
                 >
                   <tab.icon className="w-4 h-4" />
@@ -159,93 +163,31 @@ const ProductForm = () => {
           <div className="p-6">
             {activeTab === 'general' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <input
-                  type="text"
-                  placeholder="Product Name"
-                  value={formData.name}
-                  onChange={(e) => handleInputChange('name', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                />
-                <input
-                  type="text"
-                  placeholder="SKU"
-                  value={formData.sku}
-                  onChange={(e) => handleInputChange('sku', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                />
-                <input
-                  type="text"
-                  placeholder="Slug"
-                  value={formData.slug}
-                  onChange={(e) => handleInputChange('slug', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                />
-                <input
-                  type="text"
-                  placeholder="Brand"
-                  value={formData.brand}
-                  onChange={(e) => handleInputChange('brand', e.target.value)}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                />
+                {['name', 'sku', 'slug', 'brand'].map((field) => (
+                  <input
+                    key={field}
+                    type="text"
+                    placeholder={field.charAt(0).toUpperCase() + field.slice(1)}
+                    value={(formData as any)[field]}
+                    onChange={(e) => handleInputChange(field, e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  />
+                ))}
               </div>
             )}
 
             {activeTab === 'inventory' && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <input
-                  type="number"
-                  placeholder="Price"
-                  value={formData.price}
-                  onChange={(e) =>
-                    handleInputChange('price', e.target.value === '' ? '' : parseFloat(e.target.value))
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                />
-                <input
-                  type="number"
-                  placeholder="Stock"
-                  value={formData.stock}
-                  onChange={(e) =>
-                    handleInputChange('stock', e.target.value === '' ? '' : parseInt(e.target.value))
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                />
-                <input
-                  type="number"
-                  placeholder="Discount"
-                  value={formData.discount}
-                  onChange={(e) =>
-                    handleInputChange('discount', e.target.value === '' ? '' : parseFloat(e.target.value))
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                />
-                <input
-                  type="number"
-                  placeholder="Compare Price"
-                  value={formData.comparePrice}
-                  onChange={(e) =>
-                    handleInputChange('comparePrice', e.target.value === '' ? '' : parseFloat(e.target.value))
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                />
-                <input
-                  type="number"
-                  placeholder="Cost Price"
-                  value={formData.costPrice}
-                  onChange={(e) =>
-                    handleInputChange('costPrice', e.target.value === '' ? '' : parseFloat(e.target.value))
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                />
-                <input
-                  type="number"
-                  placeholder="Weight"
-                  value={formData.weight}
-                  onChange={(e) =>
-                    handleInputChange('weight', e.target.value === '' ? '' : parseFloat(e.target.value))
-                  }
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                />
+                {['price', 'stock', 'discount', 'comparePrice', 'costPrice', 'weight'].map((field) => (
+                  <input
+                    key={field}
+                    type="number"
+                    placeholder={field.replace(/([A-Z])/g, ' $1')}
+                    value={(formData as any)[field]}
+                    onChange={(e) => handleInputChange(field, e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg"
+                  />
+                ))}
               </div>
             )}
 
@@ -255,8 +197,7 @@ const ProductForm = () => {
                   className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 p-8"
                   onDrop={(e) => {
                     e.preventDefault();
-                    const files = Array.from(e.dataTransfer.files);
-                    handleFileSelect(files as File[]);
+                    handleFileSelect(Array.from(e.dataTransfer.files) as File[]);
                   }}
                   onDragOver={(e) => e.preventDefault()}
                 >
@@ -274,22 +215,16 @@ const ProductForm = () => {
                     multiple
                     className="hidden"
                     accept="image/*"
-                    onChange={(e) => {
-                      const files = Array.from(e.target.files || []);
-                      handleFileSelect(files as File[]);
-                    }}
+                    onChange={(e) => handleFileSelect(Array.from(e.target.files || []) as File[])}
                   />
                 </div>
+
                 <div>
                   <h4 className="text-sm font-medium text-gray-900 mb-4">Preview</h4>
                   <div className="grid grid-cols-2 gap-2">
                     {imagePreviews.map((preview, index) => (
                       <div key={index} className="relative group">
-                        <img
-                          src={preview}
-                          alt={`Preview ${index + 1}`}
-                          className="w-full h-24 object-cover rounded-lg border"
-                        />
+                        <img src={preview} alt={`Preview ${index + 1}`} className="w-full h-24 object-cover rounded-lg border" />
                         <button
                           type="button"
                           onClick={() => handleRemoveImage(index)}
@@ -306,7 +241,6 @@ const ProductForm = () => {
           </div>
         </div>
 
-        {/* Submit */}
         <div className="flex justify-end mt-6 gap-2">
           <button onClick={() => router.back()} className="px-6 py-2 border border-gray-300 rounded-lg text-sm">
             Cancel

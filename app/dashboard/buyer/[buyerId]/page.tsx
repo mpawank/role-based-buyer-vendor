@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import jwt from 'jsonwebtoken';
 import Link from 'next/link';
 import { LogOut, Home, ShoppingCart, Settings, User } from 'lucide-react';
 
 type UserType = {
+  buyerId?: string;
   email: string;
   role: string;
   name?: string;
@@ -15,6 +16,7 @@ type UserType = {
 
 export default function BuyerDashboard() {
   const router = useRouter();
+  const { buyerId } = useParams();
   const [user, setUser] = useState<UserType | null>(null);
 
   useEffect(() => {
@@ -26,15 +28,15 @@ export default function BuyerDashboard() {
 
     try {
       const decoded = jwt.decode(token) as UserType;
-      if (decoded?.role !== 'buyer') {
+
+      // ✅ Check for buyerId from token
+      if (decoded?.role !== 'buyer' || decoded?.buyerId !== buyerId) {
         router.push('/login');
         return;
       }
 
       fetch('/api/me', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       })
         .then(res => res.json())
         .then(data => {
@@ -43,6 +45,7 @@ export default function BuyerDashboard() {
             router.push('/login');
           } else {
             setUser({
+              buyerId: buyerId as string,
               email: data.email,
               role: data.role,
               name: data.name,
@@ -53,14 +56,14 @@ export default function BuyerDashboard() {
     } catch {
       router.push('/login');
     }
-  }, [router]);
+  }, [router, buyerId]);
 
   const logout = () => {
     localStorage.removeItem('token');
     router.push('/login');
   };
 
-  if (!user) return null;
+  if (!user) return <div className="p-6">Loading...</div>;
 
   return (
     <div className="min-h-screen flex bg-gray-100">
@@ -75,10 +78,10 @@ export default function BuyerDashboard() {
           </div>
         </div>
         <nav className="p-4 space-y-2 flex-1">
-          <SidebarLink icon={<Home size={18} />} href="/dashboard/buyer" label="Dashboard" />
-          <SidebarLink icon={<User size={18} />} href="/dashboard/buyer/profile" label="Profile" />
-          <SidebarLink icon={<ShoppingCart size={18} />} href="/dashboard/buyer/products" label="My Products" />
-          <SidebarLink icon={<Settings size={18} />} href="/buyer-settings" label="Settings" />
+          <SidebarLink icon={<Home size={18} />} href={`/dashboard/buyer/${buyerId}`} label="Dashboard" />
+          <SidebarLink icon={<User size={18} />} href={`/dashboard/buyer/${buyerId}/profile`} label="Profile" />
+          <SidebarLink icon={<ShoppingCart size={18} />} href={`/dashboard/buyer/${buyerId}/products`} label="My Products" />
+          <SidebarLink icon={<Settings size={18} />} href={`/dashboard/buyer/${buyerId}/settings`} label="Settings" />
         </nav>
         <div className="p-4 border-t">
           <button
@@ -103,10 +106,7 @@ export default function BuyerDashboard() {
 
 function SidebarLink({ icon, href, label }: { icon: React.ReactNode; href: string; label: string }) {
   return (
-    <Link
-      href={href}
-      className="flex items-center gap-2 text-gray-700 hover:bg-gray-100 p-2 rounded-md"
-    >
+    <Link href={href} className="flex items-center gap-2 text-gray-700 hover:bg-gray-100 p-2 rounded-md">
       {icon}
       <span>{label}</span>
     </Link>

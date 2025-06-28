@@ -11,11 +11,12 @@ import {
 } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import axios from 'axios';
 
 export default function ViewProductPage() {
   const router = useRouter();
   const params = useParams();
-  const { id } = params as { id: string };
+  const { buyerId, productId } = params as { buyerId: string; productId: string };
 
   const [product, setProduct] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -24,19 +25,17 @@ export default function ViewProductPage() {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const res = await fetch(`/api/buyer/products/${id}`);
-        if (!res.ok) throw new Error('Product not found');
-        const data = await res.json();
-        setProduct(data);
+        const res = await axios.get(`/api/buyer/products/${productId}`);
+        setProduct(res.data.product); // ✅ FIX: Access the nested "product" field
       } catch (err: any) {
-        setError(err.message);
+        setError(err.message || 'Error loading product');
       } finally {
         setLoading(false);
       }
     };
 
-    if (id) fetchProduct();
-  }, [id]);
+    if (productId) fetchProduct();
+  }, [productId]);
 
   if (loading) {
     return <div className="p-6">Loading...</div>;
@@ -51,39 +50,19 @@ export default function ViewProductPage() {
       <Card>
         <CardHeader>
           <CardTitle>Product Details</CardTitle>
-          <CardDescription>ID: {id}</CardDescription>
+          <CardDescription>ID: {productId}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div>
-            <strong>Name:</strong> {product.name}
-          </div>
-          <div>
-            <strong>SKU:</strong> {product.sku}
-          </div>
-          <div>
-            <strong>Slug:</strong> {product.slug}
-          </div>
-          <div>
-            <strong>Brand:</strong> {product.brand}
-          </div>
-          <div>
-            <strong>Price:</strong> ₹{product.price}
-          </div>
-          <div>
-            <strong>Stock:</strong> {product.stock}
-          </div>
-          <div>
-            <strong>Discount:</strong> {product.discount}%
-          </div>
-          <div>
-            <strong>Compare Price:</strong> ₹{product.comparePrice}
-          </div>
-          <div>
-            <strong>Cost Price:</strong> ₹{product.costPrice}
-          </div>
-          <div>
-            <strong>Weight:</strong> {product.weight}kg
-          </div>
+          <div><strong>Name:</strong> {product.name}</div>
+          <div><strong>SKU:</strong> {product.sku}</div>
+          <div><strong>Slug:</strong> {product.slug}</div>
+          <div><strong>Brand:</strong> {product.brand}</div>
+          <div><strong>Price:</strong> ₹{product.price}</div>
+          <div><strong>Stock:</strong> {product.stock}</div>
+          <div><strong>Discount:</strong> {product.discount}%</div>
+          <div><strong>Compare Price:</strong> ₹{product.comparePrice}</div>
+          <div><strong>Cost Price:</strong> ₹{product.costPrice}</div>
+          <div><strong>Weight:</strong> {product.weight}kg</div>
 
           {product.images?.length > 0 && (
             <div className="space-y-2">
@@ -105,7 +84,7 @@ export default function ViewProductPage() {
             <Button variant="outline" onClick={() => router.back()}>
               Back
             </Button>
-            <Link href={`/dashboard/buyer/products/${id}/edit`}>
+            <Link href={`/dashboard/buyer/${buyerId}/products/${productId}/edit`}>
               <Button className="ml-2">Edit</Button>
             </Link>
           </div>

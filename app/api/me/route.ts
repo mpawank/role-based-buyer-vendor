@@ -11,7 +11,9 @@ export async function GET(request: Request) {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { email: string };
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+      email: string;
+    };
 
     await connectDB();
     const user = await User.findOne({ email: decoded.email }).select('-password -__v');
@@ -21,6 +23,7 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json({
+      _id: user._id,         // ✅ Used in dynamic routes
       email: user.email,
       role: user.role,
       name: user.name,
@@ -40,7 +43,10 @@ export async function PUT(request: Request) {
     }
 
     const token = authHeader.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as { email: string };
+    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
+      email: string;
+    };
+
     const { name, image } = await request.json();
 
     await connectDB();
@@ -55,6 +61,7 @@ export async function PUT(request: Request) {
     }
 
     return NextResponse.json({
+      _id: user._id,
       email: user.email,
       role: user.role,
       name: user.name,

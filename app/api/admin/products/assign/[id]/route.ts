@@ -1,3 +1,8 @@
+// ========================
+// FILE: /app/api/admin/assign/[id]/route.ts
+// PURPOSE: Assign a vendor to a product (Admin Only)
+// ========================
+
 import { NextRequest, NextResponse } from 'next/server';
 import { connectDB } from '@/lib/db';
 import Product from '@/models/Product';
@@ -6,7 +11,7 @@ import jwt from 'jsonwebtoken';
 
 export async function PUT(req: NextRequest, context: { params: { id: string } }) {
   try {
-    const productId = context.params.id;
+    const { id: productId } = context.params;
     const { vendorId } = await req.json();
 
     if (!vendorId) {
@@ -14,7 +19,7 @@ export async function PUT(req: NextRequest, context: { params: { id: string } })
     }
 
     const authHeader = req.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!authHeader?.startsWith('Bearer ')) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
@@ -41,6 +46,9 @@ export async function PUT(req: NextRequest, context: { params: { id: string } })
     return NextResponse.json({ success: true, product });
   } catch (error) {
     console.error('[PUT] /api/admin/assign/[id]', error);
-    return NextResponse.json({ error: 'Server error', details: String(error) }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Server error', details: String(error) },
+      { status: 500 }
+    );
   }
 }

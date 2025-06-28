@@ -1,3 +1,4 @@
+// FILE: /models/User.ts
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IUser extends Document {
@@ -11,8 +12,7 @@ export interface IUser extends Document {
 const UserSchema = new Schema<IUser>({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-role: { type: String, enum: ["vendor", "buyer", "admin"], required: true },
-
+  role: { type: String, enum: ["vendor", "buyer", "admin"], required: true },
   name: { type: String, required: true },
   image: { type: String, default: '' },
 });
